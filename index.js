@@ -5,6 +5,7 @@ var minimatch    = require('minimatch');
 var sass         = require('node-sass');
 var gulp         = require('gulp');
 var gutil        = require('gulp-util');
+var inject       = require('gulp-inject');
 var slash        = require('gulp-slash');
 var semiflat     = require('gulp-semiflat');
 

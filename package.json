@@ -25,8 +25,11 @@
     "node-sass": "~0.9.3",
     "through2": "~0.5.1",
     "minimatch": "~0.4.0",
-    "through-pipes": "latest",
+    "gulp": "~3.8.6",
     "gulp-util": "~3.0.0",
-    "gulp-slash": "latest"
+    "gulp-inject": "~1.0.0",
+    "gulp-slash": "latest",
+    "gulp-semiflat": "latest",
+    "through-pipes": "latest",
   }
 }
