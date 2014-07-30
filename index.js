@@ -48,14 +48,14 @@ module.exports = function() {
 
         // setup parameters
         var sourcePath = file.path.replace(path.basename(file.path), '');
-        var sourceName = path.basename(file.path).replace(path.extname(file.path), '');
-        var sourceMap  = sourceName + '.css.map';
+        var sourceName = path.basename(file.path, path.extname(file.path));
+        var mapName    = sourceName + '.css.map';
         var stats      = { };
 
         /**
          * Push file contents to the output stream.
          * @param {string} ext The extention for the file, including dot
-         * @param {string?} contents The contents for the file
+         * @param {string|object?} contents The contents for the file or fields to assign to it
          * @return {vinyl.File} The file that has been pushed to the stream
          */
         function pushResult(ext, contents) {
@@ -63,8 +63,13 @@ module.exports = function() {
             cwd:      file.cwd,
             base:     file.base,
             path:     sourcePath + sourceName + ext,
-            contents: contents ? new Buffer(contents) : null
+            contents: (typeof contents === 'string') ? new Buffer(contents) : null
           });
+          if (typeof contents === 'object') {
+            for (var key in contents) {
+              pending[key] = contents[key];
+            }
+          }
           stream.push(pending);
           return pending;
         }
@@ -74,7 +79,7 @@ module.exports = function() {
          * @param {string} css Compiled css
          * @param {string} map The source-map for the compiled css
          */
-        function success(css, map) {
+        function successHandler(css, map) {
           var source = minimatch.makeRe(file.cwd).source
             .replace(/^\^|\$$/g, '')          // match text anywhere on the line by removing line start/end
             .replace(/\\\//g, '[\\\\\\/]') +  // detect any platform path format
@@ -95,22 +100,35 @@ module.exports = function() {
          * Handler for error in node-sass.
          * @param {string} error The error text from node-sass
          */
-        function error(error) {
-          var pending = pushResult('.css', null);
-          pending.sassSource = file;
-          pending.sassError  = error.toString();
+        function errorHandler(error) {
+          pushResult('.css', {
+            sassSource: file,
+            sassError:  error.toString()
+          });
           done();
         }
 
-        // node-sass go!
-        sass.render({
-          file:         file.path,
-          success:      success,
-          error:        error,
-          includePaths: libList,
-          outputStyle:  outputStyle || 'compressed',
-          stats:        stats,
-          sourceMap:    sourceMap
+        /**
+         * Perform the sass render with the given <code>sourceMap</code> and <code>success</code> parameters.
+         * @param {string|boolean} map The source map filename or <code>false</code> for none
+         * @param {function({string})} error Handler for error
+         * @param {function({string}, {string})} success Handler for success
+         */
+        function render(map, error, success) {
+          sass.render({
+            file:         file.path,
+            success:      success,
+            error:        error,
+            includePaths: libList,
+            outputStyle:  outputStyle || 'compressed',
+            stats:        stats,
+            sourceMap:    map
+          });
+        }
+
+        // run first without sourcemap as this can cause process exit where errors exist
+        render(false, errorHandler, function() {
+          render(mapName, errorHandler, successHandler);
         });
       });
     },
@@ -128,15 +146,17 @@ module.exports = function() {
       return through.obj(function (file, encoding, done) {
 
         // unsuccessful element have a the correct properties
-        var isError = (file.isNull) && (file.sassError) && (file.sassSource);
+        var isError = (file.isNull()) && (file.sassError) && (file.sassSource);
         if (isError) {
 
           // extract features from the error
-          var analysis = (/(.*)\:(\d+)\:\s*error:\s*(.*)/).exec(error);
+          var analysis = (/(.*)\:(\d+)\:\s*error:\s*(.*)/).exec(file.sassError);
           var message;
           if (analysis) {
-            var filename = (analysis[1] === 'source string') ? file.path : path.resolve(analysis[1] + '.scss');
-            message = filename + ':' + analysis[2] + ':0: ' + analysis[3];
+            var source   = file.sassSource;
+            var isSource = (analysis[1] === 'source string');
+            var absolute = (isSource) ? source.path : path.resolve(analysis[1] + '.scss');
+            message = absolute + ':' + analysis[2] + ':0: ' + analysis[3] + '\n';
           } else {
 console.log('\n!!! TODO include this error: ' + error + '\n');
           }
