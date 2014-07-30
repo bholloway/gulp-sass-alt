@@ -15,20 +15,35 @@ var semiflat     = require('gulp-semiflat');
  */
 module.exports = function() {
   'use strict';
-  var libList = [ ];
-  return {
+  var libList  = [ ];
+
+  /**
+   * Add string values to the <code>libList</code> uniquely.
+   * @param {string|Array} value An explicit library path string or array thereof
+   */
+  function addUnique(value) {
+    if ((typeof value === 'object') && (value instanceof Array)) {
+      value.forEach(addUnique);
+    } else if ((typeof value === 'string') && (libList.indexOf(value) < 0)) {
+      libList.push(value);
+    }
+  }
+
+  // create a return value
+  var instance = {
 
     /**
      * Infer library paths from the <code>base</code> paths in the input stream in preparation for
      * <code>transpile</code>.
+     * Any arguments given are treated as explicit paths and are added as-is to the library list.
      * Outputs a stream of the same files.
+     * @param {...string|Array} Any number of explicit library path strings or arrays thereof
      * @returns {stream.Through} A through stream that performs the operation of a gulp stream
      */
     libraries: function() {
+      addUnique(Array.prototype.slice.call(arguments));
       return through.obj(function(file, encoding, done) {
-        if (libList.indexOf(file.base) < 0) {
-          libList.push(file.base);
-        }
+        addUnique(file.base);
         this.push(file);
         done();
       });
@@ -84,12 +99,12 @@ module.exports = function() {
             .replace(/^\^|\$$/g, '')          // match text anywhere on the line by removing line start/end
             .replace(/\\\//g, '[\\\\\\/]') +  // detect any platform path format
             '|\\.\\.\\/';  			              // relative paths are an artefact and must be removed
-          var parsable  = slash(map.replace(new RegExp(source, 'g'), ''));
+          var parsable  = map.replace(new RegExp(source, 'g'), '');
           var sourceMap = JSON.parse(parsable);
           delete sourceMap.file;
           delete sourceMap.sourcesContent;
           sourceMap.sources.forEach(function(value, i, array) {
-            array[i] = /^\//.test(value) ? value : ('/' + value); // ensure root relative
+            array[i] = path.resolve('/' + slash(value)); // ensure root relative
           });
           pushResult('.css', css);
           pushResult('.css.map', JSON.stringify(sourceMap, null, '  '));
@@ -222,4 +237,5 @@ console.log('\n!!! TODO include this error: ' + error + '\n');
       });
     }
   };
+  return instance;
 };

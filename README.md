@@ -33,9 +33,13 @@ Create an instance.
 
 Infer library paths from the `base` paths in the input stream in preparation for `transpile`.
 
+Any arguments given are treated as explicit paths and are added as-is to the library list.
+
 Outputs a stream of the same files.
 
-@returns `{stream.Through}` A through stream that performs the operation of a gulp stream
+@param `{...string|Array}` Any number of explicit library path strings or arrays thereof.
+
+@returns `{stream.Through}` A through stream that performs the operation of a gulp stream.
 
 ### `.transpile([outputStyle])`
 
