@@ -30,6 +30,6 @@
     "gulp-inject": "~1.0.0",
     "gulp-slash": "latest",
     "gulp-semiflat": "latest",
-    "through-pipes": "latest",
+    "through-pipes": "latest"
   }
 }
