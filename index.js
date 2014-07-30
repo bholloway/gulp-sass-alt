@@ -1,8 +1,12 @@
-var path     = require('path');
-var through  = require('through2');
-var sass     = require('node-sass');
-var slash    = require('gulp-slash');
-var semiflat = require('gulp-semiflat');
+var path         = require('path');
+var through      = require('through2');
+var throughPipes = require('through-pipes');
+var minimatch    = require('minimatch');
+var sass         = require('node-sass');
+var gulp         = require('gulp');
+var gutil        = require('gulp-util');
+var slash        = require('gulp-slash');
+var semiflat     = require('gulp-semiflat');
 
 /**
  * Create an instance.
@@ -53,7 +57,7 @@ module.exports = function() {
          * @return {vinyl.File} The file that has been pushed to the stream
          */
         function pushResult(ext, contents) {
-          var pending      = new plugins.util.File();
+          var pending      = new gutil.File();
           pending.cwd      = file.cwd;
           pending.base     = file.base;
           pending.path     = pathTemplate.replace('{ext}', ext);
@@ -173,7 +177,7 @@ module.exports = function() {
         var cssBase   = (cssBasePath) ? path.resolve(cssBasePath) : htmlBase;
         var glob      = htmlPath.replace(htmlBase, cssBase) + '/*.css'
         var sources   = gulp.src(glob, { read: false })
-          .pipe(semiflat(jsBase))
+          .pipe(semiflat(cssBase))
           .pipe(slash());
 
         // pass the html file into a stream that injects the given sources
