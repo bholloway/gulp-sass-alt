@@ -44,12 +44,13 @@ module.exports = function() {
      */
     transpile: function(outputStyle) {
       return through.obj(function(file, encoding, done) {
-        var stream       = this;
+        var stream = this;
 
         // setup parameters
-        var pathTemplate = path.basename(file.path).replace(path.extname(file.path), '{ext}');
-        var stats        = { };
-        var sourceMap    = pathTemplate.replace('{ext}', '.css.map');
+        var sourcePath = file.path.replace(path.basename(file.path), '');
+        var sourceName = path.basename(file.path).replace(path.extname(file.path), '');
+        var sourceMap  = sourceName + '.css.map';
+        var stats      = { };
 
         /**
          * Push file contents to the output stream.
@@ -58,11 +59,12 @@ module.exports = function() {
          * @return {vinyl.File} The file that has been pushed to the stream
          */
         function pushResult(ext, contents) {
-          var pending      = new gutil.File();
-          pending.cwd      = file.cwd;
-          pending.base     = file.base;
-          pending.path     = pathTemplate.replace('{ext}', ext);
-          pending.contents = contents ? null : new Buffer(contents);
+          var pending = new gutil.File({
+            cwd:      file.cwd,
+            base:     file.base,
+            path:     sourcePath + sourceName + ext,
+            contents: contents ? new Buffer(contents) : null
+          });
           stream.push(pending);
           return pending;
         }
@@ -77,10 +79,13 @@ module.exports = function() {
             .replace(/^\^|\$$/g, '')          // match text anywhere on the line by removing line start/end
             .replace(/\\\//g, '[\\\\\\/]') +  // detect any platform path format
             '|\\.\\.\\/';  			              // relative paths are an artefact and must be removed
-          var parsable  = slash(map.replace(new RegExp(source, 'g'), ''));
+          var parsable  = map.replace(new RegExp(source, 'g'), '');
           var sourceMap = JSON.parse(parsable);
           delete sourceMap.file;
           delete sourceMap.sourcesContent;
+          sourceMap.sources.forEach(function(value, i, array) {
+            array[i] = path.resolve('/' + slash(value)); // ensure root relative
+          });
           pushResult('.css', css);
           pushResult('.css.map', JSON.stringify(sourceMap, null, '  '));
           done();
@@ -94,6 +99,7 @@ module.exports = function() {
           var pending = pushResult('.css', null);
           pending.sassSource = file;
           pending.sassError  = error.toString();
+          done();
         }
 
         // node-sass go!
@@ -132,7 +138,7 @@ module.exports = function() {
             var filename = (analysis[1] === 'source string') ? file.path : path.resolve(analysis[1] + '.scss');
             message = filename + ':' + analysis[2] + ':0: ' + analysis[3];
           } else {
-            console.log('\n!!! TODO include this error: ' + error + '\n');
+console.log('\n!!! TODO include this error: ' + error + '\n');
           }
 
           // report unique errors in original sources
