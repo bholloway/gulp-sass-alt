@@ -99,13 +99,10 @@ module.exports = function() {
             .replace(/^\^|\$$/g, '')          // match text anywhere on the line by removing line start/end
             .replace(/\\\//g, '[\\\\\\/]') +  // detect any platform path format
             '|\\.\\.\\/';  			              // relative paths are an artefact and must be removed
-          var parsable  = map.replace(new RegExp(source, 'g'), '');
+          var parsable  = slash(map.replace(new RegExp(source, 'g'), ''));
           var sourceMap = JSON.parse(parsable);
           delete sourceMap.file;
           delete sourceMap.sourcesContent;
-          sourceMap.sources.forEach(function(value, i, array) {
-            array[i] = path.resolve('/' + slash(value)); // ensure root relative
-          });
           pushResult('.css', css);
           pushResult('.css.map', JSON.stringify(sourceMap, null, '  '));
           done();
