@@ -29,8 +29,7 @@ module.exports = function() {
     }
   }
 
-  // create a return value
-  var instance = {
+  return {
 
     /**
      * Infer library paths from the <code>base</code> paths in the input stream in preparation for
@@ -103,6 +102,9 @@ module.exports = function() {
           var sourceMap = JSON.parse(parsable);
           delete sourceMap.file;
           delete sourceMap.sourcesContent;
+          sourceMap.sources.forEach(function(value, i, array) {
+            array[i] = /^\//.test(value) ? value : ('/' + value); // ensure root relative
+          });
           pushResult('.css', css);
           pushResult('.css.map', JSON.stringify(sourceMap, null, '  '));
           done();
@@ -234,5 +236,4 @@ console.log('\n!!! TODO include this error: ' + error + '\n');
       });
     }
   };
-  return instance;
 };
