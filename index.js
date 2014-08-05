@@ -13,7 +13,7 @@ var semiflat     = require('gulp-semiflat');
  * Create an instance.
  * @returns {{libraries: function, transpile: function, sassReporter: function, injectAppCSS: function}}
  */
-module.exports = function() {
+module.exports = function () {
   'use strict';
   var libList  = [ ];
 
@@ -39,9 +39,9 @@ module.exports = function() {
      * @param {...string|Array} Any number of explicit library path strings or arrays thereof
      * @returns {stream.Through} A through stream that performs the operation of a gulp stream
      */
-    libraries: function() {
+    libraries: function () {
       addUnique(Array.prototype.slice.call(arguments));
-      return through.obj(function(file, encoding, done) {
+      return through.obj(function (file, encoding, done) {
         addUnique(file.base);
         this.push(file);
         done();
@@ -56,8 +56,8 @@ module.exports = function() {
      * @param {string?} outputStyle One of the <code>libsass</code> supported output styles
      * @returns {stream.Through} A through stream that performs the operation of a gulp stream
      */
-    transpile: function(outputStyle) {
-      return through.obj(function(file, encoding, done) {
+    transpile: function (outputStyle) {
+      return through.obj(function (file, encoding, done) {
         var stream = this;
 
         // setup parameters
@@ -102,7 +102,7 @@ module.exports = function() {
           var sourceMap = JSON.parse(parsable);
           delete sourceMap.file;
           delete sourceMap.sourcesContent;
-          sourceMap.sources.forEach(function(value, i, array) {
+          sourceMap.sources.forEach(function (value, i, array) {
             array[i] = /^\//.test(value) ? value : ('/' + value); // ensure root relative
           });
           pushResult('.css', css);
@@ -126,8 +126,8 @@ module.exports = function() {
          * Perform the sass render with the given <code>sourceMap</code>, <code>error</code>, and <code>success</code>
          * parameters.
          * @param {string|boolean} map The source map filename or <code>false</code> for none
-         * @param {function({string})} error Handler for error
-         * @param {function({string}, {string})} success Handler for success
+         * @param {function ({string})} error Handler for error
+         * @param {function ({string}, {string})} success Handler for success
          */
         function render(map, error, success) {
           sass.render({
@@ -142,7 +142,7 @@ module.exports = function() {
         }
 
         // run first without sourcemap as this can cause process exit where errors exist
-        render(false, errorHandler, function() {
+        render(false, errorHandler, function () {
           render(mapName, errorHandler, successHandler);
         });
       });
@@ -154,7 +154,7 @@ module.exports = function() {
      * @param {number?} bannerWidth The width of banner comment, zero or omitted for none
      * @returns {stream.Through} A through stream that performs the operation of a gulp stream
      */
-    sassReporter: function(bannerWidth) {
+    sassReporter: function (bannerWidth) {
       var output = [ ];
 
       // push each item to an output buffer
@@ -199,13 +199,14 @@ console.log('\n!!! TODO include this error: ' + error + '\n');
 
     /**
      * Inject all CSS files found in the same relative directory as the HTML file in the stream.
+     * Also inject all CSS files found in the directories above, up to and including the base path.
      * Where a <code>cssBasePath</code> is not given CSS is presumed to be adjacent to HTML.
      * Outputs a stream of HTML files with amended content.
      * @param {string} cssBasePath An absolute or root relative base path for css files
      * @returns {stream.Through} A through stream that performs the operation of a gulp stream
      */
-    injectAppCSS: function(cssBasePath) {
-      return through.obj(function(file, encoding, done) {
+    injectAppCSS: function (cssBasePath) {
+      return through.obj(function (file, encoding, done) {
         var stream = this;
 
         // infer the html base path from the file.base and use this as a base to locate
@@ -214,18 +215,21 @@ console.log('\n!!! TODO include this error: ' + error + '\n');
         var htmlPath  = path.resolve(file.path.replace(htmlName, ''));
         var htmlBase  = path.resolve(file.base);
         var cssBase   = (cssBasePath) ? path.resolve(cssBasePath) : htmlBase;
-        var glob      = htmlPath.replace(htmlBase, cssBase) + '/*.css'
-        var sources   = gulp.src(glob, { read: false })
+        var relative  = htmlPath.replace(htmlBase, '').split(/[\\\/]/g);
+        var glob      = relative.map(function (unused, i, array) {
+          return [ cssBase ].concat(array.slice(0, i + 1)).concat('*.css').join('/');
+        });
+        var sources = gulp.src(glob, { read: false })
           .pipe(semiflat(cssBase))
           .pipe(slash());
 
         // pass the html file into a stream that injects the given sources
         //  then add the resulting file to the output stream
-        throughPipes(function(readable) {
+        throughPipes(function (readable) {
           return readable
             .pipe(inject(sources));
         })
-          .output(function(file) {
+          .output(function (file) {
             stream.push(file);
             done();
           })
