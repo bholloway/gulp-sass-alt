@@ -123,7 +123,8 @@ module.exports = function() {
         }
 
         /**
-         * Perform the sass render with the given <code>sourceMap</code> and <code>success</code> parameters.
+         * Perform the sass render with the given <code>sourceMap</code>, <code>error</code>, and <code>success</code>
+         * parameters.
          * @param {string|boolean} map The source map filename or <code>false</code> for none
          * @param {function({string})} error Handler for error
          * @param {function({string}, {string})} success Handler for success
@@ -164,13 +165,10 @@ module.exports = function() {
         if (isError) {
 
           // extract features from the error
-          var analysis = (/(.*)\:(\d+)\:\s*error:\s*(.*)/).exec(file.sassError);
+          var analysis = /(.*)\:(\d+)\:\s*error:\s*(.*)/.exec(file.sassError);
           var message;
           if (analysis) {
-            var source   = file.sassSource;
-            var isSource = (analysis[1] === 'source string');
-            var absolute = (isSource) ? source.path : path.resolve(analysis[1] + '.scss');
-            message = absolute + ':' + analysis[2] + ':0: ' + analysis[3] + '\n';
+            message = path.resolve(analysis[1]) + ':' + analysis[2] + ':0: ' + analysis[3] + '\n';
           } else {
 console.log('\n!!! TODO include this error: ' + error + '\n');
           }
