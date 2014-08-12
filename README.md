@@ -74,4 +74,6 @@ Outputs a stream of HTML files with amended content.
 
 @param `{string?} cssBasePath` An absolute or root relative base path for css files.
 
+@param `{object} opts` Options for `inject`.
+
 @returns `{stream.Through}` A through stream that performs the operation of a gulp stream.

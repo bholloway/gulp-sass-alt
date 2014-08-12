@@ -203,9 +203,10 @@ console.log('\n!!! TODO include this error: ' + error + '\n');
      * Where a <code>cssBasePath</code> is not given CSS is presumed to be adjacent to HTML.
      * Outputs a stream of HTML files with amended content.
      * @param {string} cssBasePath An absolute or root relative base path for css files
+     * @param {object} opts Options for <code>inject</code>
      * @returns {stream.Through} A through stream that performs the operation of a gulp stream
      */
-    injectAppCSS: function (cssBasePath) {
+    injectAppCSS: function (cssBasePath, opts) {
       return through.obj(function (file, encoding, done) {
         var stream = this;
 
@@ -227,7 +228,7 @@ console.log('\n!!! TODO include this error: ' + error + '\n');
         //  then add the resulting file to the output stream
         throughPipes(function (readable) {
           return readable
-            .pipe(inject(sources));
+            .pipe(inject(sources, opts));
         })
           .output(function (file) {
             stream.push(file);

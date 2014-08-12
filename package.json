@@ -1,6 +1,6 @@
 {
   "name": "gulp-sass-alt",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "An alternate SASS plugin for Gulp that provides library detection and separate source map files.",
   "keywords": [
     "gulp",
